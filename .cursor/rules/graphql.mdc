@@ -1,0 +1,14 @@
+---
+description: Правила GraphQL-схемы (code-first)
+globs: src/**/*.resolver.ts, src/**/models/*.ts, src/graphql/**
+alwaysApply: false
+---
+
+- Схема генерируется из декораторов; `schema.gql` — артефакт, руками не редактируется, но коммитится.
+- У каждого `@ObjectType` и неочевидного `@Field` — `description` (Sandbox показывает его как документацию).
+- Nullable указывай явно: `@Field(() => String, { nullable: true })` + тип `string | null`.
+- Enum из Prisma регистрируй через `registerEnumType` рядом с моделью, где он используется.
+- Resolver возвращает Prisma-сущности (`import { X as XEntity } from '@prisma/client'`); вычисляемые поля (`period`, `skillGroups`) — через `@ResolveField`.
+- Изменения схемы — только обратно совместимые (добавление полей/аргументов). Удаление/переименование — через `deprecationReason`.
+- Apollo Sandbox: `ApolloServerPluginLandingPageLocalDefault` с `DEFAULT_SANDBOX_QUERY`; при добавлении важных полей обнови этот запрос.
+- Stacktrace в ответах только вне `NODE_ENV=production`.

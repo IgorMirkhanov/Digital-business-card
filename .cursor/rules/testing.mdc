@@ -1,0 +1,11 @@
+---
+description: Тесты — unit и e2e
+globs: src/**/*.spec.ts, test/**
+alwaysApply: false
+---
+
+- Unit (`src/**/*.spec.ts`, Jest + ts-jest): чистые функции и логика сервисов без БД. Время передавай параметром (`buildPeriod(start, end, now)`), не мокай `Date` глобально.
+- E2E (`test/*.e2e-spec.ts`): поднимают `AppModule` целиком и ходят в `/graphql` через supertest. Требуют мигрированную и засиженную БД.
+- E2E не должны зависеть от конкретных текстов визитки (имя, компании) — проверяй структуру и непустоту.
+- Новое поле GraphQL → добавь его в e2e-запрос. Новая логика в сервисе → unit-тест.
+- Если нужно доказать отсутствие N+1 — считай SQL-запросы в e2e с несколькими профилями (Prisma Client с `log: [{ emit: 'event', level: 'query' }]` + `$on('query')`, см. задачу T6 в ROADMAP).

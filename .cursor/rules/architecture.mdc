@@ -1,0 +1,59 @@
+---
+description: Слои модулей, DataLoader, добавление новых сущностей и полей
+globs: src/**/*.ts
+alwaysApply: false
+---
+
+# Слои (строго)
+
+Каждый доменный модуль `src/modules/<feature>/`:
+
+| Файл | Можно | Нельзя |
+|------|-------|--------|
+| `<feature>.repository.ts` | `PrismaService`, запросы, `orderBy`, батч-методы `findByXIds(ids: readonly string[])` | бизнес-правила, GraphQL, исключения Nest |
+| `<feature>.service.ts` | бизнес-логика, вызовы репозитория, DataLoader через `LoaderRegistry`, `NotFoundException` и др. | `PrismaService` напрямую, декораторы GraphQL |
+| `<feature>.resolver.ts` | `@Query`, `@ResolveField`, `@Args`, `@Context`, делегирование в сервис | Prisma, логика, циклы по данным |
+| `models/*.model.ts` | `@ObjectType`, `@Field`, `registerEnumType` | логика |
+| чистые функции (`period.ts`) | доменные вычисления без зависимостей | I/O |
+
+Модуль экспортирует **только сервис**. Репозиторий — приватный провайдер модуля.
+Межмодульные вызовы идут сервис → сервис (пример: `ProjectsService` → `SkillsService.findByProject`).
+
+# Вложенные поля и N+1
+
+Любое поле-коллекция резолвится через `@ResolveField` + DataLoader. Шаблон:
+
+```ts
+const ITEMS_BY_PARENT = Symbol('itemsByParent');
+
+findByParent(loaders: LoaderRegistry, parentId: string): Promise<Item[]> {
+  return loaders
+    .get(ITEMS_BY_PARENT, () =>
+      createOneToManyLoader(
+        (ids) => this.repository.findByParentIds(ids),
+        (item) => item.parentId,
+      ),
+    )
+    .load(parentId);
+}
+```
+
+- Ключ загрузчика — `Symbol` уровня модуля, уникальный.
+- `LoaderRegistry` создаётся на каждый запрос в `src/graphql/graphql-context.ts`. Не делай загрузчики синглтонами и не используй request-scoped провайдеры.
+- Для one-to-one/many-to-one добавь рядом с `createOneToManyLoader` функцию `createByIdLoader` в `src/graphql/loaders/loader-registry.ts` и покрой тестом.
+- Никогда не делай `findMany` по одному родителю внутри `@ResolveField`.
+
+# Как добавить новую сущность (чек-лист)
+
+1. `prisma/schema.prisma`: модель с `profileId`, `onDelete: Cascade`, `@@index`, `position Int @default(0)` если важен порядок, `@@map` в snake_case.
+2. `npm run db:migrate -- --name add_<entity>`.
+3. `prisma/data/profile.data.ts`: тип в `ProfileSeed` + данные. `prisma/seed.ts`: `deleteMany` + создание внутри той же транзакции.
+4. Модуль `src/modules/<entity>/`: model → repository (батч по `profileId`) → service (loader) → module.
+5. Поле в `Profile` (`profile.model.ts`) + `@ResolveField` в `ProfileResolver`, импорт модуля в `ProfileModule` и `AppModule`.
+6. Unit-тест на логику сервиса, e2e-проверка поля в `test/app.e2e-spec.ts`.
+7. Перегенерировать `schema.gql`, обновить README (пример запроса) и `docs/ARCHITECTURE.md`.
+
+# Ошибки
+
+Сервисы бросают стандартные исключения Nest (`NotFoundException`, `BadRequestException`).
+Перевод в GraphQL-коды — в `formatError` (`src/graphql/graphql.config.ts`), расширяй таблицу `HTTP_STATUS_TO_GRAPHQL_CODE` там же.

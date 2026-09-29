@@ -1,0 +1,13 @@
+---
+description: Prisma — схема, миграции, сид
+globs: prisma/**
+alwaysApply: false
+---
+
+- Изменил `schema.prisma` → `npm run db:migrate -- --name <snake_case>` → закоммить папку миграции целиком. Не редактируй уже закоммиченные миграции.
+- Имена таблиц/колонок в БД — snake_case через `@@map`/`@map`, поля в коде — camelCase.
+- `id` — `String @id @default(uuid()) @db.Uuid`. Даты без времени — `@db.Date`.
+- `binaryTargets` должны включать `linux-musl-openssl-3.0.x` (Docker на `node:22-alpine`) — не удаляй.
+- Сид (`prisma/seed.ts`) обязан оставаться идемпотентным: upsert профиля по `slug`, пересоздание дочерних коллекций в **одной** `$transaction`. Проверка: запусти `npm run db:seed` дважды — количество строк не меняется.
+- Валидации данных визитки (ссылки проектов на существующие навыки и т.п.) — в начале `seedProfile`, до транзакции, с понятной ошибкой.
+- `prisma/**/*.ts` компилируется отдельно (`tsconfig.seed.json` → `dist-seed/`) и в Docker запускается как `node dist-seed/seed.js`. Не импортируй в сид ничего из `src/`.

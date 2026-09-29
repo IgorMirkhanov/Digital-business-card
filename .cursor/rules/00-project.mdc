@@ -1,0 +1,28 @@
+---
+description: Базовые правила проекта Digital Business Card API
+alwaysApply: true
+---
+
+# Проект
+
+Backend-визитка: GraphQL API (Apollo Sandbox) с профилем, навыками, опытом и проектами.
+Стек фиксирован заданием: **TypeScript, Node.js 22, NestJS 11, Prisma 6, GraphQL (Apollo Server 5, code-first), PostgreSQL 16, Docker, Git**.
+
+Перед изменениями читай `docs/ARCHITECTURE.md`. Задачи берутся из `docs/ROADMAP.md`.
+
+## Жёсткие правила
+
+- Не обновляй мажорные версии NestJS (12), Prisma (7/8), graphql (17): это отдельная задача с миграцией, не попутная правка.
+- Не меняй API, которого требует задание: `query { profile { name description skills { name } experience { company position } projects { name } } }` обязан работать без аргументов.
+- Личные данные меняются **только** в `prisma/data/profile.data.ts`. Никаких данных в миграциях или коде.
+- Не выдумывай факты о владельце (компании, даты, ссылки). Если данных нет — спроси пользователя.
+- Не коммить `.env`, секреты, `dist/`, `dist-seed/`.
+- TypeScript strict, без `any` и без `@ts-ignore`. Если тип не сходится — чини тип.
+- Стиль: 2 пробела, одинарные кавычки, trailing commas, импорты без алиасов (относительные пути), как в существующем коде.
+- Комментарии — только «почему», не «что». Плотность как в соседних файлах.
+- Каждое изменение завершается проверками из раздела «Definition of Done» в `AGENTS.md`.
+
+## Коммиты
+
+Conventional Commits на английском: `feat: ...`, `fix: ...`, `refactor: ...`, `docs: ...`, `test: ...`, `chore: ...`.
+Один логический шаг — один коммит.
