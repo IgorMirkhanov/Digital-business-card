@@ -1,0 +1,120 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+"""A position held at a company"""
+type Experience {
+  """Key achievements in display order"""
+  achievements: [String!]!
+  company: String!
+  id: ID!
+  location: String
+  period: Period!
+  position: String!
+}
+
+"""Link to a professional resource (GitHub, LinkedIn, ...)"""
+type Link {
+  id: ID!
+  kind: LinkKind!
+  label: String!
+  url: String!
+}
+
+enum LinkKind {
+  EMAIL
+  GITHUB
+  LINKEDIN
+  OTHER
+  TELEGRAM
+  WEBSITE
+}
+
+"""Employment period with derived, display-ready values"""
+type Period {
+  """Whole calendar months, both ends inclusive"""
+  durationMonths: Int!
+
+  """null for the current job"""
+  endDate: DateTime
+  isCurrent: Boolean!
+
+  """
+  Human-readable period, e.g. "Mar 2026 – present"
+  """
+  label: String!
+  startDate: DateTime!
+}
+
+"""Professional profile — the root of the business card"""
+type Profile {
+  """Short professional summary"""
+  description: String!
+
+  """Current jobs first, then most recent"""
+  experience: [Experience!]!
+
+  """
+  One-line title, e.g. "Backend Developer"
+  """
+  headline: String!
+  id: ID!
+  links: [Link!]!
+  location: String
+  name: String!
+  projects: [Project!]!
+  skillGroups: [SkillGroup!]!
+  skills(category: SkillCategory): [Skill!]!
+  slug: String!
+}
+
+"""A project with links to the demo and/or source code"""
+type Project {
+  description: String!
+  id: ID!
+  name: String!
+
+  """Source code repository"""
+  repositoryUrl: String
+
+  """Skills applied in the project"""
+  technologies: [Skill!]!
+
+  """Live demo / product page"""
+  url: String
+}
+
+type Query {
+  """Profile by slug; the business card owner by default"""
+  profile(slug: String): Profile!
+
+  """All profiles stored in the database"""
+  profiles: [Profile!]!
+}
+
+"""A professional skill or technology"""
+type Skill {
+  category: SkillCategory!
+  id: ID!
+  name: String!
+}
+
+enum SkillCategory {
+  AI
+  BACKEND
+  DATABASE
+  DEVOPS
+  LANGUAGE
+  TOOLING
+}
+
+"""Skills grouped by category, in display order"""
+type SkillGroup {
+  category: SkillCategory!
+  skills: [Skill!]!
+}

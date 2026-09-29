@@ -1,0 +1,116 @@
+// Data model of the digital business card.
+// A single database can hold several profiles; every entity belongs to a profile
+// and is removed together with it (onDelete: Cascade).
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum LinkKind {
+  GITHUB
+  LINKEDIN
+  TELEGRAM
+  EMAIL
+  WEBSITE
+  OTHER
+}
+
+enum SkillCategory {
+  LANGUAGE
+  BACKEND
+  DATABASE
+  DEVOPS
+  AI
+  TOOLING
+}
+
+model Profile {
+  id          String       @id @default(uuid()) @db.Uuid
+  slug        String       @unique
+  name        String
+  headline    String
+  description String
+  location    String?
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  links       Link[]
+  skills      Skill[]
+  experience  Experience[]
+  projects    Project[]
+
+  @@map("profiles")
+}
+
+model Link {
+  id        String   @id @default(uuid()) @db.Uuid
+  profileId String   @map("profile_id") @db.Uuid
+  kind      LinkKind
+  label     String
+  url       String
+  position  Int      @default(0)
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+  @@map("links")
+}
+
+model Skill {
+  id        String        @id @default(uuid()) @db.Uuid
+  profileId String        @map("profile_id") @db.Uuid
+  name      String
+  category  SkillCategory
+  position  Int           @default(0)
+  profile   Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  projects  Project[]     @relation("ProjectTechnologies")
+
+  @@unique([profileId, name])
+  @@map("skills")
+}
+
+model Experience {
+  id           String        @id @default(uuid()) @db.Uuid
+  profileId    String        @map("profile_id") @db.Uuid
+  company      String
+  position     String
+  location     String?
+  startDate    DateTime      @map("start_date") @db.Date
+  // null means "still working here"
+  endDate      DateTime?     @map("end_date") @db.Date
+  profile      Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  achievements Achievement[]
+
+  @@index([profileId])
+  @@map("experience")
+}
+
+model Achievement {
+  id           String     @id @default(uuid()) @db.Uuid
+  experienceId String     @map("experience_id") @db.Uuid
+  text         String
+  position     Int        @default(0)
+  experience   Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+
+  @@index([experienceId])
+  @@map("achievements")
+}
+
+model Project {
+  id            String   @id @default(uuid()) @db.Uuid
+  profileId     String   @map("profile_id") @db.Uuid
+  name          String
+  description   String
+  url           String?
+  repositoryUrl String?  @map("repository_url")
+  position      Int      @default(0)
+  profile       Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  technologies  Skill[]  @relation("ProjectTechnologies")
+
+  @@index([profileId])
+  @@map("projects")
+}
